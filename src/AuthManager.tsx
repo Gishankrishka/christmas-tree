@@ -10,7 +10,7 @@ interface AuthManagerProps {
 export const AuthManager = ({ onClose }: AuthManagerProps) => {
   const walineContainerRef = useRef<HTMLDivElement>(null);
   const walineInstanceRef = useRef<WalineInstance | null>(null);
-  const [userEmail, setUserEmail] = useState<string>('');
+  const [userNick, setUserNick] = useState<string>(''); // 改用昵称而不是邮箱
 
   // 初始化 Waline，使用原生登录和评论管理
   useEffect(() => {
@@ -42,11 +42,11 @@ export const AuthManager = ({ onClose }: AuthManagerProps) => {
         if (userInfo) {
           try {
             const user = JSON.parse(userInfo);
-            if (user.email && user.email !== userEmail) {
-              setUserEmail(user.email);
-              console.log('👤 检测到用户登录:', user.email);
+            if (user.display_name && user.display_name !== userNick) {
+              setUserNick(user.display_name);
+              console.log('👤 检测到用户登录:', user.display_name);
               // 延迟一下再过滤，确保评论列表已加载
-              setTimeout(() => filterComments(user.email), 1000);
+              setTimeout(() => filterComments(user.display_name), 1000);
             }
           } catch (e) {
             console.error('解析用户信息失败:', e);
@@ -68,50 +68,65 @@ export const AuthManager = ({ onClose }: AuthManagerProps) => {
   }, []);
 
   // 过滤评论：只显示自己发的和收到的回复
-  const filterComments = (email: string) => {
-    if (!walineContainerRef.current) return;
+  const filterComments = (nick: string) => {
+    if (!walineContainerRef.current || !nick) return;
 
-    // 获取所有评论卡片
     const allComments = walineContainerRef.current.querySelectorAll('.wl-card');
+    let myCommentsCount = 0;
+    let repliesCount = 0;
+    
+    console.log(`🔍 开始过滤评论，用户昵称: ${nick}, 总评论数: ${allComments.length}`);
     
     allComments.forEach((card) => {
       const cardElement = card as HTMLElement;
+      let isMyComment = false;
+      let isReplyToMe = false;
       
-      // 检查是否是自己的评论
-      const metaElement = cardElement.querySelector('.wl-meta');
-      const metaText = metaElement?.textContent || '';
+      // 方法 1: 从 Waline 数据对象获取
+      const cardData = (cardElement as any).__waline_comment__;
       
-      // 检查评论内容中是否包含 @自己 (说明是回复自己的)
-      const commentContent = cardElement.querySelector('.wl-content')?.textContent || '';
-      const isReplyToMe = commentContent.includes(`@${email}`);
+      if (cardData && cardData.nick) {
+        isMyComment = cardData.nick.trim() === nick.trim();
+        
+        if (!isMyComment) {
+          // 检查是否回复自己
+          const content = (cardData.orig || cardData.comment || '');
+          isReplyToMe = content.includes(`@${nick}`);
+        }
+      } else {
+        // 方法 2: 从 DOM 获取
+        const nickElement = cardElement.querySelector('.wl-nick');
+        const commentNick = nickElement?.textContent?.trim() || '';
+        isMyComment = commentNick === nick.trim();
+        
+        if (!isMyComment) {
+          const commentContent = cardElement.querySelector('.wl-content')?.textContent || '';
+          isReplyToMe = commentContent.includes(`@${nick}`);
+        }
+      }
       
-      // 通过检查评论数据属性或内容判断是否是自己的评论
-      const emailMatch = metaText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
-      const commentEmail = emailMatch ? emailMatch[1] : '';
-      
-      const isMyComment = commentEmail === email;
-      
-      // 只显示自己的评论或回复自己的评论
       if (isMyComment || isReplyToMe) {
         cardElement.style.display = '';
+        if (isMyComment) myCommentsCount++;
+        if (isReplyToMe) repliesCount++;
       } else {
         cardElement.style.display = 'none';
       }
     });
 
-    console.log(`✅ 已过滤评论，只显示用户 ${email} 的评论和收到的回复`);
+    console.log(`✅ 已过滤评论 - 我的评论: ${myCommentsCount}, 收到的回复: ${repliesCount}`);
   };
 
-  // 当用户邮箱变化时重新过滤
+  // 当用户昵称变化时重新过滤
   useEffect(() => {
-    if (userEmail) {
+    if (userNick) {
       const timer = setInterval(() => {
-        filterComments(userEmail);
+        filterComments(userNick);
       }, 1000);
 
       return () => clearInterval(timer);
     }
-  }, [userEmail]);
+  }, [userNick]);
 
   return (
     <div className="auth-modal">
@@ -122,7 +137,7 @@ export const AuthManager = ({ onClose }: AuthManagerProps) => {
         <h2>🎄 我的评论</h2>
         <p className="auth-modal__desc">登录后可以查看和管理你的祝福</p>
         
-        {!userEmail && (
+        {!userNick && (
           <div className="auth-login-hint">
             <div className="auth-login-hint__icon">🎅</div>
             <div className="auth-login-hint__title">请先登录</div>

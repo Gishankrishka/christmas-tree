@@ -1,27 +1,11 @@
-import { useState, useMemo, useRef, useEffect, Suspense, useCallback, useImperativeHandle, forwardRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import type React from 'react';
-import { Canvas, useFrame, extend, useThree } from '@react-three/fiber';
-import {
-  OrbitControls,
-  Environment,
-  PerspectiveCamera,
-  shaderMaterial,
-  Float,
-  Stars,
-  Sparkles,
-  useTexture
-} from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import * as THREE from 'three';
-import { MathUtils } from 'three';
-import * as random from 'maath/random';
-import { GestureRecognizer, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
 import { photos as photoAssets } from 'virtual:photos';
 import { musicTracks } from 'virtual:music';
 import { WalineCommentBox, useWalineComments } from './WalineIntegration';
 import type { WalineComment } from './WalineIntegration';
 import { AuthManager } from './AuthManager';
-import { isWalineConfigured, FEATURE_FLAGS, DENSITY_CONFIG, UI_CONFIG } from './waline-config';
+import { isWalineConfigured, FEATURE_FLAGS, UI_CONFIG } from './waline-config';
 import './App.css';
 
 const FALLBACK_PHOTO = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none"><rect width="512" height="512" rx="28" fill="%23004225"/><circle cx="256" cy="180" r="90" fill="%23FFD700"/><text x="50%" y="78%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="64" font-family="sans-serif">&#127876;</text></svg>';
@@ -746,7 +730,7 @@ const TopStar = ({ state, onClick, isLit }: { state: 'CHAOS' | 'FORMED', onClick
         const intensity = 2 + Math.sin(time * 4) * 0.8;
         materialRef.current.emissiveIntensity = intensity;
       } else {
-        // 未点亮时：柔和发光
+        // 未点亮时：微弱发光
         materialRef.current.emissiveIntensity = 0.6;
       }
     }
