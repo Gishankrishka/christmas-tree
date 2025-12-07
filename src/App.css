@@ -125,16 +125,18 @@ body, html {
 .hud--stats { display: none; }
 
 .hud--controls {
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
+  position: fixed;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 12px;
+  right: 12px;
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   max-width: 100%;
-  z-index: 12;
+  z-index: 20;
+  pointer-events: none;
 }
 
 .ui-button {
@@ -151,6 +153,7 @@ body, html {
   transition: transform 0.18s ease, box-shadow 0.22s ease, background 0.2s ease;
   backdrop-filter: blur(10px);
   box-shadow: 0 12px 24px rgba(0,0,0,0.35);
+  pointer-events: auto;
 }
 
 .ui-button::after {
@@ -191,6 +194,7 @@ body, html {
   padding: 8px 10px;
   box-shadow: 0 8px 18px rgba(0,0,0,0.12);
   color: #0f1b29;
+  pointer-events: auto;
 }
 
 .ui-select label {

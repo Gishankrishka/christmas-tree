@@ -162,10 +162,9 @@ const getTreePosition = () => {
 };
 
 // --- Component: Foliage ---
-const Foliage = ({ state }: { state: 'CHAOS' | 'FORMED' }) => {
+const Foliage = ({ state, count }: { state: 'CHAOS' | 'FORMED', count: number }) => {
   const materialRef = useRef<any>(null);
   const { positions, targetPositions, randoms } = useMemo(() => {
-    const count = CONFIG.counts.foliage;
     const positions = new Float32Array(count * 3); const targetPositions = new Float32Array(count * 3); const randoms = new Float32Array(count);
     const spherePoints = random.inSphere(new Float32Array(count * 3), { radius: 25 }) as Float32Array;
     for (let i = 0; i < count; i++) {
@@ -175,7 +174,7 @@ const Foliage = ({ state }: { state: 'CHAOS' | 'FORMED' }) => {
       randoms[i] = Math.random();
     }
     return { positions, targetPositions, randoms };
-  }, []);
+  }, [count]);
   useFrame((rootState, delta) => {
     if (materialRef.current) {
       materialRef.current.uTime = rootState.clock.elapsedTime;
@@ -202,12 +201,12 @@ type PhotoOrnamentsProps = { state: 'CHAOS' | 'FORMED', photoUrls: string[], onP
 
 // --- Component: Photo Ornaments (Double-Sided Polaroid) ---
 const PhotoOrnaments = forwardRef(function PhotoOrnamentsComponent(
-  props: PhotoOrnamentsProps,
+  props: PhotoOrnamentsProps & { ornamentCount?: number },
   ref: React.ForwardedRef<PhotoOrnamentsHandle>
 ) {
-  const { state, photoUrls, onPhotoOpen } = props;
+  const { state, photoUrls, onPhotoOpen, ornamentCount } = props;
   const textures = useTexture(photoUrls);
-  const count = CONFIG.counts.ornaments;
+  const count = ornamentCount ?? CONFIG.counts.ornaments;
   const groupRef = useRef<THREE.Group>(null);
   const { size, camera } = useThree();
 
@@ -363,8 +362,7 @@ const PhotoOrnaments = forwardRef(function PhotoOrnamentsComponent(
 });
 
 // --- Component: Christmas Elements ---
-const ChristmasElements = ({ state }: { state: 'CHAOS' | 'FORMED' }) => {
-  const count = CONFIG.counts.elements;
+const ChristmasElements = ({ state, count }: { state: 'CHAOS' | 'FORMED', count: number }) => {
   const groupRef = useRef<THREE.Group>(null);
 
   const boxGeometry = useMemo(() => new THREE.BoxGeometry(0.8, 0.8, 0.8), []);
@@ -427,8 +425,7 @@ const Trunk = () => {
 };
 
 // --- Component: Fairy Lights ---
-const FairyLights = ({ state }: { state: 'CHAOS' | 'FORMED' }) => {
-  const count = CONFIG.counts.lights;
+const FairyLights = ({ state, count }: { state: 'CHAOS' | 'FORMED', count: number }) => {
   const groupRef = useRef<THREE.Group>(null);
   const geometry = useMemo(() => new THREE.SphereGeometry(0.8, 8, 8), []);
 
@@ -525,7 +522,7 @@ const TopStar = ({ state, onClick }: { state: 'CHAOS' | 'FORMED', onClick: () =>
 };
 
 // --- Main Scene Experience ---
-const Experience = ({ sceneState, rotationSpeed, photoUrls, onStarClick, onPhotoOpen, ornamentsRef, fogColor }: { sceneState: 'CHAOS' | 'FORMED', rotationSpeed: number, photoUrls: string[], onStarClick: () => void, onPhotoOpen: (p: PhotoOpenPayload) => void, ornamentsRef: React.RefObject<PhotoOrnamentsHandle>, fogColor: string }) => {
+const Experience = ({ sceneState, rotationSpeed, photoUrls, onStarClick, onPhotoOpen, ornamentsRef, fogColor, isMobile, counts }: { sceneState: 'CHAOS' | 'FORMED', rotationSpeed: number, photoUrls: string[], onStarClick: () => void, onPhotoOpen: (p: PhotoOpenPayload) => void, ornamentsRef: React.RefObject<PhotoOrnamentsHandle>, fogColor: string, isMobile: boolean, counts: typeof CONFIG.counts }) => {
   const controlsRef = useRef<any>(null);
   useFrame(() => {
     if (controlsRef.current) {
@@ -553,7 +550,7 @@ const Experience = ({ sceneState, rotationSpeed, photoUrls, onStarClick, onPhoto
       <fog attach="fog" args={[fogColor, 40, 140]} />
       <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
       <Environment preset="night" background={false} />
-      <Sparkles count={800} scale={[120, 120, 120]} size={2} speed={0.18} opacity={0.12} color="#cfe9ff" />
+      <Sparkles count={isMobile ? 400 : 800} scale={[120, 120, 120]} size={2} speed={0.18} opacity={0.12} color="#cfe9ff" />
 
       <ambientLight intensity={0.4} color="#003311" />
       <pointLight position={[30, 30, 30]} intensity={100} color={CONFIG.colors.warmLight} />
@@ -562,19 +559,21 @@ const Experience = ({ sceneState, rotationSpeed, photoUrls, onStarClick, onPhoto
 
       <group position={[0, 2, 0]}>
         {sceneState === 'FORMED' && <Trunk />}
-        <Foliage state={sceneState} />
+        <Foliage state={sceneState} count={counts.foliage} />
         <Suspense fallback={null}>
-          <PhotoOrnaments ref={ornamentsRef} state={sceneState} photoUrls={photoUrls} onPhotoOpen={onPhotoOpen} />
-           <ChristmasElements state={sceneState} />
-           <FairyLights state={sceneState} />
+          <PhotoOrnaments ref={ornamentsRef} state={sceneState} photoUrls={photoUrls} onPhotoOpen={onPhotoOpen} ornamentCount={counts.ornaments} />
+           <ChristmasElements state={sceneState} count={counts.elements} />
+           <FairyLights state={sceneState} count={counts.lights} />
             <TopStar state={sceneState} onClick={onStarClick} />
         </Suspense>
-        <Sparkles count={400} scale={50} size={7} speed={0.35} opacity={0.35} color={CONFIG.colors.silver} />
+        <Sparkles count={isMobile ? Math.floor(counts.lights * 0.8) : 400} scale={50} size={7} speed={0.35} opacity={0.35} color={CONFIG.colors.silver} />
       </group>
 
-      <EffectComposer>
-        <Bloom luminanceThreshold={0.8} luminanceSmoothing={0.1} intensity={1.5} radius={0.5} mipmapBlur />
-      </EffectComposer>
+      {!isMobile && (
+        <EffectComposer>
+          <Bloom luminanceThreshold={0.8} luminanceSmoothing={0.1} intensity={1.3} radius={0.45} mipmapBlur />
+        </EffectComposer>
+      )}
     </>
   );
 };
@@ -709,12 +708,29 @@ export default function GrandTreeApp() {
   const [rotationSpeed, setRotationSpeed] = useState(0);
   const [debugMode, setDebugMode] = useState(false);
   const [backgroundId, setBackgroundId] = useState<string>(DEFAULT_BACKGROUND_ID);
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 820 : false));
   const [floatingPhoto, setFloatingPhoto] = useState<{ url: string; phase: 'grab' | 'release'; key: number; origin: { x: number; y: number } } | null>(null);
   const [isPlayingMusic, setIsPlayingMusic] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const ornamentsRef = useRef<PhotoOrnamentsHandle>(null);
 
   const photoUrls = useMemo(() => (photoAssets.length ? photoAssets : [FALLBACK_PHOTO]), [photoAssets]);
+
+  const counts = useMemo(() => (
+    isMobile ? {
+      foliage: 18000,
+      ornaments: 140,
+      elements: 140,
+      lights: 260
+    } : CONFIG.counts
+  ), [isMobile]);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 820);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const activeBackground = useMemo(() => {
     const found = BACKGROUND_OPTIONS.find(opt => opt.id === backgroundId) || BACKGROUND_OPTIONS[0];
@@ -789,12 +805,12 @@ export default function GrandTreeApp() {
         ['--text-color' as string]: activeBackground.textColor
       }}
     >
-      {activeBackground.kind === 'video' && activeBackground.mediaUrl && (
+      {!isMobile && activeBackground.kind === 'video' && activeBackground.mediaUrl && (
         <video className="bg-media" src={activeBackground.mediaUrl} autoPlay loop muted playsInline />
       )}
       <div className="canvas-wrap">
         <Canvas
-          dpr={[1, 1.5]}
+          dpr={isMobile ? [1, 1] : [1, 1.5]}
           gl={{
             toneMapping: THREE.ReinhardToneMapping,
             alpha: true,
@@ -805,7 +821,7 @@ export default function GrandTreeApp() {
             depth: true
           }}
           frameloop="always"
-          shadows
+          shadows={!isMobile}
           onCreated={({ gl }) => {
             gl.setClearColor(0x000000, 0);
             gl.autoClearColor = false;
@@ -819,6 +835,8 @@ export default function GrandTreeApp() {
               onPhotoOpen={handlePhotoOpen}
               ornamentsRef={ornamentsRef}
               fogColor={activeBackground.fogColor}
+              isMobile={isMobile}
+              counts={counts}
             />
         </Canvas>
       </div>
