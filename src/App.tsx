@@ -569,7 +569,7 @@ const Experience = ({ sceneState, rotationSpeed, photoUrls, onStarClick, onPhoto
            <FairyLights state={sceneState} />
             <TopStar state={sceneState} onClick={onStarClick} />
         </Suspense>
-        <Sparkles count={600} scale={50} size={8} speed={0.4} opacity={0.4} color={CONFIG.colors.silver} />
+        <Sparkles count={400} scale={50} size={7} speed={0.35} opacity={0.35} color={CONFIG.colors.silver} />
       </group>
 
       <EffectComposer>
@@ -794,10 +794,22 @@ export default function GrandTreeApp() {
       )}
       <div className="canvas-wrap">
         <Canvas
-          dpr={[1, 2]}
-          gl={{ toneMapping: THREE.ReinhardToneMapping, alpha: true, antialias: true, preserveDrawingBuffer: true }}
+          dpr={[1, 1.5]}
+          gl={{
+            toneMapping: THREE.ReinhardToneMapping,
+            alpha: true,
+            antialias: true,
+            preserveDrawingBuffer: true,
+            powerPreference: 'high-performance',
+            stencil: false,
+            depth: true
+          }}
           frameloop="always"
           shadows
+          onCreated={({ gl }) => {
+            gl.setClearColor(0x000000, 0);
+            gl.autoClearColor = false;
+          }}
         >
             <Experience
               sceneState={sceneState}

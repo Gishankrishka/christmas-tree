@@ -134,6 +134,7 @@ body, html {
   align-items: center;
   justify-content: center;
   max-width: 100%;
+  z-index: 12;
 }
 
 .ui-button {
@@ -298,12 +299,15 @@ body, html {
     right: 10px;
     bottom: 12px;
     justify-content: center;
+    gap: 8px;
   }
 
   .ui-button {
-    flex: 1 1 calc(50% - 12px);
-    min-width: 140px;
+    flex: 1 1 calc(50% - 10px);
+    min-width: 120px;
     text-align: center;
+    padding: 12px 12px;
+    font-size: 13px;
   }
 
   .ui-select {
