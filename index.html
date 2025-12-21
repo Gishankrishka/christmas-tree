@@ -3,142 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Merry Christmas - 2025</title>
+    <title>Cây Thông Noel Của Tôi</title>
     <style>
-        /* Toàn bộ giao diện nền và hiệu ứng */
-        body { 
-            margin: 0; 
-            background: #020205; 
-            color: white; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
-            overflow: hidden; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-        }
-
-        /* Ngôi sao lấp lánh */
-        .star { 
-            color: gold; 
-            font-size: 50px; 
-            margin-bottom: -10px; 
-            filter: drop-shadow(0 0 15px yellow); 
-            animation: pulse 1.5s infinite alternate;
-        }
-
-        @keyframes pulse {
-            from { transform: scale(1); opacity: 0.8; }
-            to { transform: scale(1.2); opacity: 1; }
-        }
-
-        /* Các tầng của cây thông */
-        .tree-layer { 
-            width: 0; 
-            height: 0; 
-            border-left: 100px solid transparent; 
-            border-right: 100px solid transparent; 
-            border-bottom: 100px solid #054a29; 
-            margin-top: -50px; 
-            filter: drop-shadow(0 0 5px #000);
-        }
-        .layer2 { border-left: 80px solid transparent; border-right: 80px solid transparent; border-bottom: 80px solid #0a5d38; z-index: 2; }
-        .layer3 { border-left: 60px solid transparent; border-right: 60px solid transparent; border-bottom: 60px solid #11824a; z-index: 3; }
+        body { margin: 0; background: #020205; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; font-family: 'Arial', sans-serif; perspective: 1000px; }
         
-        /* Thân cây */
-        .trunk { width: 30px; height: 45px; background: #5d4037; border-radius: 0 0 5px 5px; }
+        /* Nhạc nền */
+        #music-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+        
+        /* Cấu trúc cây thông 3D từ ảnh */
+        .tree { position: relative; width: 200px; height: 300px; transform-style: preserve-3d; animation: rotateTree 15s infinite linear; }
+        @keyframes rotateTree { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
 
-        /* Lời nhắn nhấp nháy */
-        .message { 
-            margin-top: 60px; 
-            text-align: center; 
-            font-size: 22px; 
-            font-weight: bold;
-            animation: glow 2s infinite alternate; 
-            line-height: 1.6;
+        /* Ảnh top.jpg trên đỉnh */
+        .top-star {
+            position: absolute; width: 80px; height: 80px; top: -100px; left: 50%;
+            transform: translateX(-50%); border-radius: 50%; border: 3px solid gold;
+            box-shadow: 0 0 20px gold; object-fit: cover;
         }
 
-        @keyframes glow { 
-            from { text-shadow: 0 0 5px #fff, 0 0 10px #ff0000; color: #fff; } 
-            to { text-shadow: 0 0 20px #fff, 0 0 30px #ff0000; color: #ffcccc; } 
+        /* Các ảnh từ 1-31 làm thân cây */
+        .photo-leaf {
+            position: absolute; width: 40px; height: 60px; left: 50%;
+            border: 2px solid rgba(255,255,255,0.3); border-radius: 5px;
+            object-fit: cover; transition: 0.5s;
         }
 
-        /* Hiệu ứng tuyết rơi */
-        .snow { 
-            position: absolute; 
-            top: -10px; 
-            color: white; 
-            user-select: none; 
-            z-index: 1000; 
-            pointer-events: none;
-            animation: fall linear infinite; 
-        }
+        .message { margin-top: 120px; text-align: center; z-index: 100; text-shadow: 0 0 10px red; font-size: 20px; }
+        
+        .snow { position: absolute; top: -10px; color: white; animation: fall linear infinite; pointer-events: none; }
         @keyframes fall { to { transform: translateY(105vh); } }
-
-        /* Nút bật nhạc nếu bị chặn */
-        #music-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid white;
-            color: white;
-            padding: 8px 15px;
-            cursor: pointer;
-            border-radius: 20px;
-            z-index: 1001;
-        }
     </style>
 </head>
 <body>
 
-    <audio id="bg-music" loop>
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-    </audio>
+    <div id="music-container">
+        <iframe width="0" height="0" src="https://www.youtube.com/embed/KhqNTjbQ71A?autoplay=1&loop=1&playlist=KhqNTjbQ71A" frameborder="0" allow="autoplay"></iframe>
+        <p style="font-size: 10px;">Nhấn vào màn hình nếu không nghe thấy nhạc</p>
+    </div>
 
-    <button id="music-btn" onclick="toggleMusic()">🎵 Bật/Tắt Nhạc</button>
-
-    <div class="star">★</div>
-    <div class="tree-layer layer3"></div>
-    <div class="tree-layer layer2"></div>
-    <div class="tree-layer"></div>
-    <div class="trunk"></div>
+    <div class="tree" id="tree">
+        <img src="photos/top.jpg" class="top-star" alt="Top">
+    </div>
 
     <div class="message">
-        🎄 MERRY CHRISTMAS 2025 🎄<br>
-        <span style="font-size: 16px; font-weight: normal;">Chúc bạn một mùa Giáng sinh ấm áp và an lành!</span>
+        🎄 MERRY CHRISTMAS 🎄<br>
+        <b>Last Christmas I gave you my heart...</b>
     </div>
 
     <script>
-        // Tạo tuyết rơi
+        const tree = document.getElementById('tree');
+        const totalPhotos = 31;
+
+        // Tạo thân cây từ 31 tấm ảnh
+        for (let i = 1; i <= totalPhotos; i++) {
+            const img = document.createElement('img');
+            img.src = `photos/${i}.jpg`;
+            img.className = 'photo-leaf';
+            
+            // Tính toán vị trí xoắn ốc để tạo hình nón (cây thông)
+            const lat = i / totalPhotos; // Độ cao từ 0 đến 1
+            const angle = i * 0.8; // Góc xoay
+            const radius = 150 * lat; // Càng xuống dưới bán kính càng lớn
+            const y = lat * 300; // Độ cao
+            
+            img.style.transform = `rotateY(${angle * 137.5}deg) translateZ(${radius}px) translateY(${y}px)`;
+            tree.appendChild(img);
+        }
+
+        // Tạo tuyết
         function createSnow() {
             const snow = document.createElement('div');
             snow.className = 'snow';
             snow.innerHTML = '❄';
             snow.style.left = Math.random() * 100 + 'vw';
-            snow.style.fontSize = Math.random() * 15 + 10 + 'px';
             snow.style.animationDuration = Math.random() * 3 + 2 + 's';
-            snow.style.opacity = Math.random();
             document.body.appendChild(snow);
             setTimeout(() => snow.remove(), 5000);
         }
         setInterval(createSnow, 100);
-
-        // Xử lý bật nhạc
-        const audio = document.getElementById('bg-music');
-        function toggleMusic() {
-            if (audio.paused) {
-                audio.play();
-            } else {
-                audio.pause();
-            }
-        }
-
-        // Cố gắng tự động phát nhạc khi người dùng click lần đầu vào trang
-        window.addEventListener('click', () => {
-            audio.play();
-        }, { once: true });
     </script>
 </body>
 </html>
