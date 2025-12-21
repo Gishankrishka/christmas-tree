@@ -2,50 +2,143 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Merry Christmas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merry Christmas - 2025</title>
     <style>
-        body { margin: 0; background: #020205; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; font-family: 'Arial', sans-serif; }
-        .tree { position: relative; width: 200px; height: 300px; transform-style: preserve-3d; animation: rotate 10s infinite linear; }
-        @keyframes rotate { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
-        .star { position: absolute; top: -50px; left: 50%; transform: translateX(-50%); color: gold; font-size: 50px; filter: drop-shadow(0 0 10px yellow); }
-        .leaf { position: absolute; width: 0; height: 0; border-left: 100px solid transparent; border-right: 100px solid transparent; border-bottom: 100px solid green; left: 0; }
-        .leaf:nth-child(1) { top: 0; transform: scale(0.6); }
-        .leaf:nth-child(2) { top: 50px; transform: scale(0.8); }
-        .leaf:nth-child(3) { top: 100px; transform: scale(1); }
-        .trunk { position: absolute; width: 40px; height: 60px; background: #5d4037; bottom: -60px; left: 80px; }
-        .message { margin-top: 100px; text-align: center; font-size: 24px; text-shadow: 0 0 10px #ff0000; animation: blink 1s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        /* Toàn bộ giao diện nền và hiệu ứng */
+        body { 
+            margin: 0; 
+            background: #020205; 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            overflow: hidden; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+
+        /* Ngôi sao lấp lánh */
+        .star { 
+            color: gold; 
+            font-size: 50px; 
+            margin-bottom: -10px; 
+            filter: drop-shadow(0 0 15px yellow); 
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); opacity: 0.8; }
+            to { transform: scale(1.2); opacity: 1; }
+        }
+
+        /* Các tầng của cây thông */
+        .tree-layer { 
+            width: 0; 
+            height: 0; 
+            border-left: 100px solid transparent; 
+            border-right: 100px solid transparent; 
+            border-bottom: 100px solid #054a29; 
+            margin-top: -50px; 
+            filter: drop-shadow(0 0 5px #000);
+        }
+        .layer2 { border-left: 80px solid transparent; border-right: 80px solid transparent; border-bottom: 80px solid #0a5d38; z-index: 2; }
+        .layer3 { border-left: 60px solid transparent; border-right: 60px solid transparent; border-bottom: 60px solid #11824a; z-index: 3; }
+        
+        /* Thân cây */
+        .trunk { width: 30px; height: 45px; background: #5d4037; border-radius: 0 0 5px 5px; }
+
+        /* Lời nhắn nhấp nháy */
+        .message { 
+            margin-top: 60px; 
+            text-align: center; 
+            font-size: 22px; 
+            font-weight: bold;
+            animation: glow 2s infinite alternate; 
+            line-height: 1.6;
+        }
+
+        @keyframes glow { 
+            from { text-shadow: 0 0 5px #fff, 0 0 10px #ff0000; color: #fff; } 
+            to { text-shadow: 0 0 20px #fff, 0 0 30px #ff0000; color: #ffcccc; } 
+        }
+
+        /* Hiệu ứng tuyết rơi */
+        .snow { 
+            position: absolute; 
+            top: -10px; 
+            color: white; 
+            user-select: none; 
+            z-index: 1000; 
+            pointer-events: none;
+            animation: fall linear infinite; 
+        }
+        @keyframes fall { to { transform: translateY(105vh); } }
+
+        /* Nút bật nhạc nếu bị chặn */
+        #music-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid white;
+            color: white;
+            padding: 8px 15px;
+            cursor: pointer;
+            border-radius: 20px;
+            z-index: 1001;
+        }
     </style>
 </head>
 <body>
-    <audio autoplay loop>
-  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-</audio>
-    <div class="tree">
-        <div class="star">★</div>
-        <div class="leaf"></div>
-        <div class="leaf"></div>
-        <div class="leaf"></div>
-        <div class="trunk"></div>
+
+    <audio id="bg-music" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+
+    <button id="music-btn" onclick="toggleMusic()">🎵 Bật/Tắt Nhạc</button>
+
+    <div class="star">★</div>
+    <div class="tree-layer layer3"></div>
+    <div class="tree-layer layer2"></div>
+    <div class="tree-layer"></div>
+    <div class="trunk"></div>
+
+    <div class="message">
+        🎄 MERRY CHRISTMAS 2025 🎄<br>
+        <span style="font-size: 16px; font-weight: normal;">Chúc bạn một mùa Giáng sinh ấm áp và an lành!</span>
     </div>
-    <div class="message">🎄 Giáng Sinh Vui Vẻ! 🎄<br>Cảm ơn anh em</div>
-    
+
     <script>
-        function createSnowflake() {
-            const snowflake = document.createElement('div');
-            snowflake.innerHTML = '❄';
-            snowflake.style.position = 'fixed';
-            snowflake.style.left = Math.random() * 100 + 'vw';
-            snowflake.style.top = '-20px';
-            snowflake.style.color = 'white';
-            snowflake.style.fontSize = Math.random() * 10 + 10 + 'px';
-            snowflake.style.opacity = Math.random();
-            snowflake.style.transition = `top ${Math.random() * 3 + 2}s linear`;
-            document.body.appendChild(snowflake);
-            setTimeout(() => { snowflake.style.top = '100vh'; }, 10);
-            setTimeout(() => { snowflake.remove(); }, 5000);
+        // Tạo tuyết rơi
+        function createSnow() {
+            const snow = document.createElement('div');
+            snow.className = 'snow';
+            snow.innerHTML = '❄';
+            snow.style.left = Math.random() * 100 + 'vw';
+            snow.style.fontSize = Math.random() * 15 + 10 + 'px';
+            snow.style.animationDuration = Math.random() * 3 + 2 + 's';
+            snow.style.opacity = Math.random();
+            document.body.appendChild(snow);
+            setTimeout(() => snow.remove(), 5000);
         }
-        setInterval(createSnowflake, 100);
+        setInterval(createSnow, 100);
+
+        // Xử lý bật nhạc
+        const audio = document.getElementById('bg-music');
+        function toggleMusic() {
+            if (audio.paused) {
+                audio.play();
+            } else {
+                audio.pause();
+            }
+        }
+
+        // Cố gắng tự động phát nhạc khi người dùng click lần đầu vào trang
+        window.addEventListener('click', () => {
+            audio.play();
+        }, { once: true });
     </script>
 </body>
 </html>
