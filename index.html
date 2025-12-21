@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; touch-action: none; }
-        #start-screen { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: white; }
+        #start-screen { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: white; }
         button { padding: 15px 40px; cursor: pointer; background: #b71c1c; color: white; border: 2px solid #ffd700; border-radius: 50px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 0 15px gold; }
         #status-tag { position: absolute; top: 15px; width: 100%; text-align: center; color: gold; font-weight: bold; z-index: 20; text-shadow: 0 0 10px black; font-size: 1rem; }
     </style>
@@ -25,7 +25,7 @@
     <audio id="music" loop><source src="audio.mp3" type="audio/mpeg"></audio>
 
     <script>
-        let scene, camera, renderer, star, magicDust;
+        let scene, camera, renderer, star, starGlow, magicDust;
         let photoMeshes = [];
         let isIntroFinished = false, isExploded = false, focusedMesh = null;
         let introActiveIndex = -1;
@@ -44,6 +44,7 @@
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.autoClear = false; // Cho phép can thiệp vào lớp vẽ
             document.getElementById('container').appendChild(renderer.domElement);
 
             scene.add(new THREE.AmbientLight(0xffffff, 1.8));
@@ -63,6 +64,20 @@
             animate();
         }
 
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+            gradient.addColorStop(0.2, 'rgba(255, 215, 0, 0.5)');
+            gradient.addColorStop(0.5, 'rgba(255, 215, 0, 0.1)');
+            gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 128, 128);
+            return new THREE.CanvasTexture(canvas);
+        }
+
         function createStar() {
             const shape = new THREE.Shape();
             const pts = 5, outR = 28, inR = 14;
@@ -76,12 +91,17 @@
                 new THREE.ExtrudeGeometry(shape, {depth: 6, bevelEnabled: true}), 
                 new THREE.MeshStandardMaterial({
                     color: 0xFFD700, emissive: 0xFFD700, emissiveIntensity: 0.8,
-                    depthTest: false // Giúp ngôi sao luôn hiện đè lên ảnh
+                    depthTest: false 
                 })
             );
             star.position.y = 155;
             star.renderOrder = 999; 
             scene.add(star);
+
+            const glowTex = createGlowTexture();
+            starGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, blending: THREE.AdditiveBlending }));
+            starGlow.scale.set(150, 150, 1);
+            star.add(starGlow);
         }
 
         function createDust() {
@@ -95,6 +115,8 @@
 
         function loadPhotos() {
             const loader = new THREE.TextureLoader();
+            const glowTex = createGlowTexture();
+
             photoFiles.forEach((fileName, i) => {
                 const texture = loader.load(`public/photos/${fileName}`);
                 const mesh = new THREE.Mesh(
@@ -102,6 +124,18 @@
                     new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
                 );
                 
+                // Lớp viền ánh sáng mờ xung quanh ảnh
+                const photoGlow = new THREE.Sprite(new THREE.SpriteMaterial({ 
+                    map: glowTex, 
+                    transparent: true, 
+                    opacity: 0, 
+                    blending: THREE.AdditiveBlending,
+                    depthTest: false // Quan trọng: Glow cũng phải đè lên ảnh khác
+                }));
+                photoGlow.scale.set(100, 120, 1);
+                photoGlow.name = "glow";
+                mesh.add(photoGlow);
+
                 const t = i/photoFiles.length;
                 const a = i * 0.85; 
                 const r = t * 120;
@@ -134,7 +168,6 @@
         function onDown(e) {
             isDragging = true;
             previousMouseX = e.clientX;
-            
             const mouse = new THREE.Vector2((e.clientX/window.innerWidth)*2-1, -(e.clientY/window.innerHeight)*2+1);
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(mouse, camera);
@@ -162,32 +195,39 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            
-            // Xoay chậm tự động nếu không đang kéo
             if(!isDragging) autoRotationY += 0.002;
             
             star.rotation.y += 0.02;
+            starGlow.material.opacity = 0.5 + Math.sin(Date.now() * 0.003) * 0.2;
             magicDust.rotation.y += 0.0003;
             scene.rotation.y = autoRotationY + userRotationY;
 
             photoMeshes.forEach((mesh, idx) => {
                 const isActive = (idx === introActiveIndex) || (mesh === focusedMesh);
+                const glow = mesh.getObjectByName("glow");
                 
                 if(isActive) {
-                    // Bay ra phía trước cây thông và phóng to Scale 6
                     const dir = new THREE.Vector3().subVectors(camera.position, mesh.userData.treePos).normalize();
-                    const targetPos = mesh.userData.treePos.clone().add(dir.multiplyScalar(130));
+                    const targetPos = mesh.userData.treePos.clone().add(dir.multiplyScalar(140));
                     
                     mesh.position.lerp(targetPos, 0.1);
-                    mesh.scale.lerp(new THREE.Vector3(6, 6, 1), 0.1); // Đặt độ lớn scale 6
+                    mesh.scale.lerp(new THREE.Vector3(6, 6, 1), 0.1); 
                     mesh.quaternion.copy(camera.quaternion).premultiply(scene.quaternion.clone().invert());
                     mesh.material.opacity = 1;
-                    mesh.renderOrder = 10; // Đè lên ảnh khác
+                    
+                    // THIẾT LẬP ĐÈ LỚP TUYỆT ĐỐI
+                    mesh.renderOrder = 500; 
+                    mesh.material.depthTest = false; // Bỏ qua chiều sâu để luôn hiện trên cùng
+                    glow.material.opacity = 0.6 + Math.sin(Date.now()*0.005)*0.2;
+                    glow.renderOrder = 499; // Glow nằm ngay dưới ảnh đang chọn nhưng trên ảnh khác
                 } else {
                     const target = isExploded ? mesh.userData.explodePos : mesh.userData.treePos;
                     mesh.position.lerp(target, 0.08);
                     mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+                    
                     mesh.renderOrder = 0;
+                    mesh.material.depthTest = true; // Trả lại chiều sâu bình thường
+                    glow.material.opacity = 0;
                     
                     if(!isExploded) mesh.lookAt(0, mesh.position.y, 0);
                     else mesh.rotation.y += 0.01;
@@ -196,6 +236,8 @@
                     mesh.material.opacity += (baseOpacity - mesh.material.opacity) * 0.1;
                 }
             });
+
+            renderer.clear();
             renderer.render(scene, camera);
         }
 
