@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Christmas 2025 - Pro Version</title>
+    <title>Christmas 2025 - Cinematic Follow</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: radial-gradient(circle, #1a1a1a, #000); font-family: sans-serif; touch-action: none; }
         #start-screen { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: white; text-align: center; }
-        button { padding: 18px 45px; cursor: pointer; background: #b71c1c; color: white; border: 2px solid #ffd700; border-radius: 50px; font-weight: bold; box-shadow: 0 0 20px rgba(255,215,0,0.4); }
+        button { padding: 18px 45px; cursor: pointer; background: #b71c1c; color: white; border: 2px solid #ffd700; border-radius: 50px; font-weight: bold; box-shadow: 0 0 20px gold; }
         #ui-guide { position: absolute; bottom: 5%; width: 100%; text-align: center; color: white; z-index: 10; display: none; }
         .guide-box { background: rgba(0,0,0,0.7); padding: 10px 25px; border-radius: 30px; border: 1px solid #ffd700; display: inline-block; font-size: 13px; }
         #status-tag { position: absolute; top: 20px; width: 100%; text-align: center; color: gold; font-size: 16px; font-weight: bold; z-index: 20; }
@@ -53,7 +53,6 @@
             createMagicDust();
             createForest();
             
-            // Mouse/Touch Events
             window.addEventListener('mousedown', onPointerDown);
             window.addEventListener('mousemove', onPointerMove);
             window.addEventListener('mouseup', () => isDragging = false);
@@ -71,13 +70,11 @@
             for (let i = 0; i < pts * 2; i++) {
                 const r = (i % 2 === 0) ? outR : inR;
                 const a = (i / pts) * Math.PI;
-                if (i === 0) shape.moveTo(Math.cos(a)*r, Math.sin(a)*r);
+                if (i === 0) shape.moveTo(Math.cos(a)*outR, Math.sin(a)*outR);
                 else shape.lineTo(Math.cos(a)*r, Math.sin(a)*r);
             }
             const geometry = new THREE.ExtrudeGeometry(shape, { depth: 5, bevelEnabled: true });
-            const material = new THREE.MeshStandardMaterial({ 
-                color: 0xFFD700, emissive: 0xFFD700, emissiveIntensity: 0.8 
-            });
+            const material = new THREE.MeshStandardMaterial({ color: 0xFFD700, emissive: 0xFFD700, emissiveIntensity: 0.8 });
             star = new THREE.Mesh(geometry, material);
             star.position.y = 100;
             scene.add(star);
@@ -86,7 +83,7 @@
         function createMagicDust() {
             const geo = new THREE.BufferGeometry();
             const pos = [];
-            for(let i=0; i<4000; i++) pos.push((Math.random()-0.5)*1200, (Math.random()-0.5)*1200, (Math.random()-0.5)*1200);
+            for(let i=0; i<4500; i++) pos.push((Math.random()-0.5)*1300, (Math.random()-0.5)*1300, (Math.random()-0.5)*1300);
             geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
             magicDust = new THREE.Points(geo, new THREE.PointsMaterial({color: 0xFFD700, size: 1.5, transparent: true, opacity: 0.6}));
             scene.add(magicDust);
@@ -101,7 +98,7 @@
                 });
                 const mesh = new THREE.Mesh(geo, mat);
                 const borderGeo = new THREE.PlaneGeometry(21, 27);
-                const borderMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.4, transparent: true, opacity: 0 });
+                const borderMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.3, transparent: true, opacity: 0 });
                 const border = new THREE.Mesh(borderGeo, borderMat);
                 border.position.z = -0.15;
                 mesh.add(border);
@@ -140,9 +137,9 @@
         }
 
         function onPointerMove(event) {
-            if (isDragging && !focusedMesh) {
+            if (isDragging) {
                 const deltaX = event.clientX - previousMouseX;
-                targetRotationY += deltaX * 0.005;
+                targetRotationY += deltaX * 0.007;
                 previousMouseX = event.clientX;
             }
         }
@@ -171,35 +168,42 @@
             }
             magicDust.rotation.y += 0.0003;
 
-            // Rotate whole scene based on drag
+            // Xoay toàn bộ cảnh (Scene rotation)
             scene.rotation.y += (targetRotationY - scene.rotation.y) * 0.1;
 
             photoMeshes.forEach((mesh, index) => {
                 const isSelected = (!isIntroFinished && index === introActiveIndex) || (mesh === focusedMesh);
                 
                 if (isSelected) {
-                    // CĂN GIỮA - PHẲNG - TO GẤP 1.5 LẦN
-                    const camDir = new THREE.Vector3(0,0,1).applyQuaternion(camera.quaternion);
-                    const centerPos = camera.position.clone().add(camDir.multiplyScalar(-110)); 
-                    centerPos.y += 10;
-
-                    mesh.position.lerp(centerPos, 0.12);
-                    mesh.scale.lerp(new THREE.Vector3(4.5, 4.5, 4.5), 0.12); 
+                    // TÍNH TOÁN VỊ TRÍ TRUNG TÂM THEO GÓC NHÌN CAMERA
+                    // Vì Scene bị xoay, chúng ta phải nghịch đảo rotation của Scene để tìm vị trí "trước mắt" camera
+                    const vector = new THREE.Vector3(0, 15, 200); // 200 là khoảng cách từ camera đến ảnh
+                    vector.applyQuaternion(camera.quaternion); 
                     
-                    // Xoay ảnh khớp với camera để luôn phẳng
-                    mesh.quaternion.slerp(camera.quaternion, 0.12);
+                    // Chuyển tọa độ thế giới sang tọa độ cục bộ của Scene đang xoay
+                    const localPos = scene.worldToLocal(vector.add(camera.position));
+                    
+                    mesh.position.lerp(localPos, 0.15);
+                    mesh.scale.lerp(new THREE.Vector3(4.5, 4.5, 4.5), 0.15); 
+                    
+                    // Ảnh luôn hướng thẳng về camera (phẳng tuyệt đối với mắt)
+                    mesh.lookAt(camera.position);
                     
                     mesh.material.opacity = 1;
-                    mesh.userData.border.material.opacity = 0.6;
+                    mesh.userData.border.material.opacity = 0.5;
                 } else {
                     const target = (isIntroFinished && isExploded) ? mesh.userData.explodePos : mesh.userData.treePos;
-                    mesh.position.lerp(target, 0.05);
+                    mesh.position.lerp(target, 0.06);
                     mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
                     const baseOp = isIntroFinished ? (isExploded ? 1 : 0.4) : 0.15;
                     mesh.material.opacity += (baseOp - mesh.material.opacity) * 0.1;
                     mesh.userData.border.material.opacity = 0;
-                    if (!isIntroFinished || !isExploded) mesh.lookAt(0, mesh.position.y, 0);
-                    else { mesh.rotation.x += 0.005; mesh.rotation.y += 0.005; }
+                    
+                    if (!isIntroFinished || !isExploded) {
+                        mesh.lookAt(0, mesh.position.y, 0);
+                    } else {
+                        mesh.rotation.x += 0.005; mesh.rotation.y += 0.005;
+                    }
                 }
             });
             renderer.render(scene, camera);
