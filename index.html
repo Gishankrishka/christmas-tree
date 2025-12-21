@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magic 3D - Point to Zoom</title>
+    <title>Magic 3D Tree - OK Gesture Zoom</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
         #ui { position: absolute; bottom: 5%; width: 100%; text-align: center; color: white; z-index: 10; pointer-events: none; }
-        button { padding: 15px 40px; pointer-events: auto; cursor: pointer; background: #cc0000; color: white; border: 2px solid gold; border-radius: 50px; }
-        #video-in { position: absolute; top: 10px; right: 10px; width: 150px; border-radius: 10px; transform: scaleX(-1); }
-        .guide { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px; display: inline-block; }
+        button { padding: 15px 40px; pointer-events: auto; cursor: pointer; background: #d32f2f; color: white; border: 2px solid #ffd700; border-radius: 50px; font-weight: bold; }
+        #video-in { position: absolute; top: 10px; right: 10px; width: 150px; border-radius: 10px; transform: scaleX(-1); border: 2px solid rgba(255,255,255,0.3); }
+        .guide { background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 20px; display: inline-block; border: 1px solid #ffd700; }
     </style>
 </head>
 <body>
@@ -22,16 +22,20 @@
 
     <div id="ui">
         <div class="guide">
-            ☝️ <b>Chỉ 1 ngón:</b> Phóng to ảnh | 🖐️ <b>Xòe tay:</b> Nổ tung | ✊ <b>Nắm tay:</b> Thu về
+            👌 <b>Dấu OK:</b> Phóng to ảnh gần nhất | 🖐️ <b>Xòe tay:</b> Nổ tung | ✊ <b>Nắm tay:</b> Thu về
         </div><br><br>
-        <button id="startBtn">BẮT ĐẦU</button>
+        <button id="startBtn">BẮT ĐẦU TRẢI NGHIỆM</button>
     </div>
+
+    <audio id="music" loop>
+        <source src="audio.mp3" type="audio/mpeg">
+    </audio>
 
     <script>
         let scene, camera, renderer, hands, cameraFeed;
-        let photoMeshes = [], magicDust;
-        let state = 'TREE'; // TREE, EXPLODE, POINTING
-        let handX = 0.5, handY = 0.5, fingerX = 0, fingerY = 0;
+        let photoMeshes = [], magicDust, star;
+        let state = 'TREE'; // TREE, EXPLODE, OK_ZOOM
+        let handX = 0.5, handY = 0.5, okX = 0, okY = 0;
         let focusedMesh = null;
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
@@ -47,16 +51,41 @@
 
             scene.add(new THREE.AmbientLight(0xffffff, 1));
             
-            // Tạo bụi sao lung linh
+            createStar(); // Tạo ngôi sao đỉnh cây
+            createMagicDust(); // Tạo bụi ánh sáng bay
+            createForest(); // Tạo cây thông ảnh
+            animate();
+        }
+
+        // Tạo ngôi sao 3D tự quay (Hình 1)
+        function createStar() {
+            const shape = new THREE.Shape();
+            const points = 5;
+            const outerRadius = 15;
+            const innerRadius = 7;
+            for (let i = 0; i < points * 2; i++) {
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const angle = (i / points) * Math.PI;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                if (i === 0) shape.moveTo(x, y);
+                else shape.lineTo(x, y);
+            }
+            const extrudeSettings = { depth: 4, bevelEnabled: true, bevelThickness: 2, bevelSize: 2 };
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            const material = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 0.8, roughness: 0.2 });
+            star = new THREE.Mesh(geometry, material);
+            star.position.y = 85;
+            scene.add(star);
+        }
+
+        function createMagicDust() {
             const dustGeo = new THREE.BufferGeometry();
             const dustPos = [];
-            for(let i=0; i<2000; i++) dustPos.push((Math.random()-0.5)*800, (Math.random()-0.5)*800, (Math.random()-0.5)*800);
+            for(let i=0; i<3000; i++) dustPos.push((Math.random()-0.5)*800, (Math.random()-0.5)*800, (Math.random()-0.5)*800);
             dustGeo.setAttribute('position', new THREE.Float32BufferAttribute(dustPos, 3));
-            magicDust = new THREE.Points(dustGeo, new THREE.PointsMaterial({color: 0xFFD700, size: 1.5, transparent: true, opacity: 0.6}));
+            magicDust = new THREE.Points(dustGeo, new THREE.PointsMaterial({color: 0xFFD700, size: 1.5, transparent: true, opacity: 0.7}));
             scene.add(magicDust);
-
-            createForest();
-            animate();
         }
 
         function createForest() {
@@ -70,9 +99,9 @@
                 
                 const t = i / 31;
                 const angle = i * 0.9;
-                const radius = t * 60;
-                mesh.userData.treePos = new THREE.Vector3(Math.cos(angle)*radius, (1-t)*120-60, Math.sin(angle)*radius);
-                mesh.userData.explodePos = new THREE.Vector3((Math.random()-0.5)*400, (Math.random()-0.5)*400, (Math.random()-0.5)*300);
+                const radius = t * 65;
+                mesh.userData.treePos = new THREE.Vector3(Math.cos(angle)*radius, (1-t)*130-60, Math.sin(angle)*radius);
+                mesh.userData.explodePos = new THREE.Vector3((Math.random()-0.5)*450, (Math.random()-0.5)*450, (Math.random()-0.5)*350);
                 
                 mesh.position.copy(mesh.userData.treePos);
                 scene.add(mesh);
@@ -84,16 +113,15 @@
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const lm = results.multiHandLandmarks[0];
                 
-                // 1. Nhận diện các tư thế tay
-                const isIndexUp = lm[8].y < lm[6].y;
-                const isOtherDown = lm[12].y > lm[10].y && lm[16].y > lm[14].y;
-                const isFist = lm[8].y > lm[6].y && lm[12].y > lm[10].y;
+                // NHẬN DIỆN CỬ CHỈ OK (Ngón cái chạm ngón trỏ)
+                const distOK = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y, lm[4].z - lm[8].z);
+                const isOK = distOK < 0.05; 
+                const isFist = lm[12].y > lm[10].y && lm[16].y > lm[14].y && lm[8].y > lm[6].y;
 
-                if (isIndexUp && isOtherDown) {
-                    state = 'POINTING';
-                    // Tọa độ ngón trỏ (lật X vì webcam bị ngược)
-                    fingerX = (1 - lm[8].x) * 2 - 1;
-                    fingerY = (1 - lm[8].y) * 2 - 1;
+                if (isOK) {
+                    state = 'OK_ZOOM';
+                    okX = (1 - lm[4].x) * 2 - 1; // Tâm của dấu OK
+                    okY = (1 - lm[4].y) * 2 - 1;
                 } else if (isFist) {
                     state = 'TREE';
                 } else {
@@ -107,14 +135,17 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // Camera follow tay mượt mà
-            camera.position.x += ((handX - 0.5) * 200 - camera.position.x) * 0.05;
-            camera.position.y += ((0.5 - handY) * 100 - camera.position.y) * 0.05;
+            // Xoay ngôi sao đỉnh cây tự động
+            if (star) star.rotation.y += 0.05;
+
+            // Camera follow tay
+            camera.position.x += ((handX - 0.5) * 220 - camera.position.x) * 0.05;
+            camera.position.y += ((0.5 - handY) * 120 - camera.position.y) * 0.05;
             camera.lookAt(0, 0, 0);
 
-            // Logic Raycaster khi Pointing
-            if (state === 'POINTING') {
-                mouse.set(fingerX, fingerY);
+            // Raycaster tìm ảnh gần dấu OK nhất
+            if (state === 'OK_ZOOM') {
+                mouse.set(okX, okY);
                 raycaster.setFromCamera(mouse, camera);
                 const intersects = raycaster.intersectObjects(photoMeshes);
                 focusedMesh = intersects.length > 0 ? intersects[0].object : null;
@@ -125,20 +156,18 @@
             photoMeshes.forEach((mesh) => {
                 const isTree = (state === 'TREE');
                 const isFocus = (mesh === focusedMesh);
-                
-                // Vị trí mục tiêu
                 const targetPos = isTree ? mesh.userData.treePos : mesh.userData.explodePos;
                 
-                // Nếu đang được Point, nó sẽ bay về phía camera một chút để Zoom
                 if (isFocus) {
-                    const zoomPos = new THREE.Vector3().lerpVectors(mesh.position, camera.position, 0.4);
-                    mesh.position.lerp(zoomPos, 0.1);
-                    mesh.rotation.y += 0.1; // Xoay nhanh khi focus
+                    const zoomPos = new THREE.Vector3().lerpVectors(mesh.position, camera.position, 0.5);
+                    mesh.position.lerp(zoomPos, 0.12);
+                    mesh.rotation.y += 0.08; 
                     mesh.material.opacity = 1;
-                    mesh.scale.lerp(new THREE.Vector3(2, 2, 2), 0.1);
+                    mesh.scale.lerp(new THREE.Vector3(2.2, 2.2, 2.2), 0.12);
                 } else {
                     mesh.position.lerp(targetPos, 0.07);
-                    mesh.material.opacity += ((isTree ? 0.2 : 1) - mesh.material.opacity) * 0.1;
+                    const baseOpacity = isTree ? 0.15 : 1;
+                    mesh.material.opacity += (baseOpacity - mesh.material.opacity) * 0.1;
                     mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
                     
                     if (isTree) mesh.lookAt(0, mesh.position.y, 0);
@@ -146,13 +175,13 @@
                 }
             });
 
-            magicDust.rotation.y += 0.001;
+            if(magicDust) magicDust.rotation.y += 0.001;
             renderer.render(scene, camera);
         }
 
         function initMediaPipe() {
             hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
-            hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5 });
+            hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6 });
             hands.onResults(onResults);
             cameraFeed = new Camera(document.getElementById('video-in'), {
                 onFrame: async () => { await hands.send({ image: document.getElementById('video-in') }); },
@@ -162,6 +191,7 @@
         }
 
         document.getElementById('startBtn').onclick = () => {
+            document.getElementById('music').play(); // Chạy nhạc Last Christmas
             document.getElementById('ui').style.display = 'none';
             initScene();
             initMediaPipe();
