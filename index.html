@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Christmas 2025 - Cinematic Follow</title>
+    <title>Christmas 2025 - Static Focus</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: radial-gradient(circle, #1a1a1a, #000); font-family: sans-serif; touch-action: none; }
         #start-screen { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: white; text-align: center; }
-        button { padding: 18px 45px; cursor: pointer; background: #b71c1c; color: white; border: 2px solid #ffd700; border-radius: 50px; font-weight: bold; box-shadow: 0 0 20px gold; }
+        button { padding: 18px 45px; cursor: pointer; background: #b71c1c; color: white; border: 2px solid #ffd700; border-radius: 50px; font-weight: bold; box-shadow: 0 0 20px gold; transition: 0.3s; }
         #ui-guide { position: absolute; bottom: 5%; width: 100%; text-align: center; color: white; z-index: 10; display: none; }
         .guide-box { background: rgba(0,0,0,0.7); padding: 10px 25px; border-radius: 30px; border: 1px solid #ffd700; display: inline-block; font-size: 13px; }
-        #status-tag { position: absolute; top: 20px; width: 100%; text-align: center; color: gold; font-size: 16px; font-weight: bold; z-index: 20; }
+        #status-tag { position: absolute; top: 20px; width: 100%; text-align: center; color: gold; font-size: 16px; font-weight: bold; z-index: 20; text-shadow: 0 0 10px black; }
     </style>
 </head>
 <body>
@@ -33,7 +33,10 @@
         let isIntroFinished = false, isExploded = false, focusedMesh = null;
         let introActiveIndex = -1;
         let isDragging = false, previousMouseX = 0, targetRotationY = 0;
+        
         const totalPhotos = 31;
+        const introDuration = 30000; 
+
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
@@ -97,14 +100,17 @@
                     map: loader.load(`public/photos/${i}.jpg`), side: THREE.DoubleSide, transparent: true, opacity: 0 
                 });
                 const mesh = new THREE.Mesh(geo, mat);
+                
                 const borderGeo = new THREE.PlaneGeometry(21, 27);
-                const borderMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.3, transparent: true, opacity: 0 });
+                const borderMat = new THREE.MeshStandardMaterial({ 
+                    color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.3, transparent: true, opacity: 0 
+                });
                 const border = new THREE.Mesh(borderGeo, borderMat);
                 border.position.z = -0.15;
                 mesh.add(border);
                 mesh.userData.border = border;
 
-                const t = i/31, a = i*0.85, r = t*85;
+                const t = i/totalPhotos, a = i*0.85, r = t*85;
                 mesh.userData.treePos = new THREE.Vector3(Math.cos(a)*r, (1-t)*160-80, Math.sin(a)*r);
                 mesh.userData.explodePos = new THREE.Vector3((Math.random()-0.5)*600, (Math.random()-0.5)*600, (Math.random()-0.5)*500);
                 mesh.position.copy(mesh.userData.treePos);
@@ -145,17 +151,19 @@
         }
 
         function startIntroSequence() {
-            const timePerPhoto = 30000 / totalPhotos;
+            const timePerPhoto = introDuration / totalPhotos;
             let currentI = 0;
+            const tag = document.getElementById('status-tag');
             const introInterval = setInterval(() => {
                 if (currentI >= totalPhotos) {
                     clearInterval(introInterval);
                     isIntroFinished = true;
                     introActiveIndex = -1;
-                    document.getElementById('status-tag').style.display = 'none';
+                    tag.style.display = 'none';
                     document.getElementById('ui-guide').style.display = 'block';
                     return;
                 }
+                tag.innerText = `🎞️ ĐANG TRÌNH CHIẾU... (${currentI + 1}/${totalPhotos})`;
                 introActiveIndex = currentI++;
             }, timePerPhoto);
         }
@@ -167,27 +175,24 @@
                 star.material.emissiveIntensity = 0.6 + Math.sin(Date.now()*0.005)*0.3;
             }
             magicDust.rotation.y += 0.0003;
-
-            // Xoay toàn bộ cảnh (Scene rotation)
             scene.rotation.y += (targetRotationY - scene.rotation.y) * 0.1;
 
             photoMeshes.forEach((mesh, index) => {
                 const isSelected = (!isIntroFinished && index === introActiveIndex) || (mesh === focusedMesh);
                 
                 if (isSelected) {
-                    // TÍNH TOÁN VỊ TRÍ TRUNG TÂM THEO GÓC NHÌN CAMERA
-                    // Vì Scene bị xoay, chúng ta phải nghịch đảo rotation của Scene để tìm vị trí "trước mắt" camera
-                    const vector = new THREE.Vector3(0, 15, 200); // 200 là khoảng cách từ camera đến ảnh
+                    // CĂN GIỮA - LUÔN PHẲNG (ẢNH TĨNH)
+                    const vector = new THREE.Vector3(0, 15, 200); 
                     vector.applyQuaternion(camera.quaternion); 
-                    
-                    // Chuyển tọa độ thế giới sang tọa độ cục bộ của Scene đang xoay
                     const localPos = scene.worldToLocal(vector.add(camera.position));
                     
                     mesh.position.lerp(localPos, 0.15);
                     mesh.scale.lerp(new THREE.Vector3(4.5, 4.5, 4.5), 0.15); 
                     
-                    // Ảnh luôn hướng thẳng về camera (phẳng tuyệt đối với mắt)
-                    mesh.lookAt(camera.position);
+                    // Khóa góc quay để ảnh luôn song song với camera (phẳng tuyệt đối)
+                    const targetQuaternion = camera.quaternion.clone();
+                    // Do cảnh (scene) xoay, ta cần bù trừ góc xoay của scene để ảnh đứng yên trước camera
+                    mesh.quaternion.copy(camera.quaternion).premultiply(scene.quaternion.clone().invert());
                     
                     mesh.material.opacity = 1;
                     mesh.userData.border.material.opacity = 0.5;
