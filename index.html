@@ -6,23 +6,24 @@
     <title>Christmas Memories 2025</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: radial-gradient(circle, #1a1a1a, #000); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
+        body { margin: 0; overflow: hidden; background: radial-gradient(circle, #1a1a1a, #000); font-family: 'Segoe UI', sans-serif; touch-action: none; }
         #start-screen { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: white; text-align: center; }
-        button { padding: 15px 40px; cursor: pointer; background: #b71c1c; color: white; border: 2px solid #ffd700; border-radius: 50px; font-weight: bold; box-shadow: 0 0 20px gold; font-size: 1.2rem; }
+        button { padding: 15px 40px; cursor: pointer; background: #b71c1c; color: white; border: 2px solid #ffd700; border-radius: 50px; font-weight: bold; box-shadow: 0 0 20px gold; font-size: 1.1rem; transition: 0.3s; }
+        button:hover { transform: scale(1.1); background: #d32f2f; }
         #ui-guide { position: absolute; bottom: 30px; width: 100%; text-align: center; color: white; z-index: 10; display: none; }
         .guide-box { background: rgba(0,0,0,0.6); padding: 8px 20px; border-radius: 20px; border: 1px solid rgba(255,215,0,0.5); display: inline-block; font-size: 12px; backdrop-filter: blur(5px); }
-        #status-tag { position: absolute; top: 20px; width: 100%; text-align: center; color: gold; font-size: 14px; font-weight: bold; z-index: 20; letter-spacing: 1px; }
+        #status-tag { position: absolute; top: 20px; width: 100%; text-align: center; color: gold; font-size: 14px; font-weight: bold; z-index: 20; text-shadow: 0 0 10px black; }
     </style>
 </head>
 <body>
 
     <div id="start-screen">
-        <h1 style="color: gold; text-shadow: 0 0 10px gold; margin-bottom: 20px;">KỶ NIỆM GIÁNG SINH 2025</h1>
-        <button id="startBtn">KHÁM PHÁ NGAY</button>
+        <h1 style="color: gold; text-shadow: 0 0 15px gold; margin-bottom: 20px;">GIÁNG SINH KỶ NIỆM 2025</h1>
+        <button id="startBtn">BẮT ĐẦU TRÌNH CHIẾU</button>
     </div>
 
     <div id="status-tag"></div>
-    <div id="ui-guide"><div class="guide-box">✨ KÉO ĐỂ XOAY | ⭐ NHẤN ĐÚP NGÔI SAO ĐỂ BÙNG NỔ | 🖼️ CHẠM ẢNH ĐỂ XEM RÕ</div></div>
+    <div id="ui-guide"><div class="guide-box">✨ KÉO ĐỂ XOAY | ⭐ NHẤN ĐÚP NGÔI SAO ĐỂ NỔ TUNG | 🖼️ CHẠM ẢNH ĐỂ XEM</div></div>
     <div id="container"></div>
 
     <audio id="music" loop><source src="audio.mp3" type="audio/mpeg"></audio>
@@ -34,32 +35,33 @@
         let introActiveIndex = -1;
         let targetRotationY = 0, isDragging = false, previousMouseX = 0;
 
-        const totalPhotos = 32; // Tổng 32 ảnh
-        const introTotalTime = 30000; // Intro 30 giây
+        const totalPhotos = 32; 
+        const introDuration = 30000; // 30 giây chia đều cho 32 ảnh
 
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 1, 2000);
-            camera.position.set(0, 10, 380);
+            camera.position.set(0, 10, 400);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             document.getElementById('container').appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+            scene.add(new THREE.AmbientLight(0xffffff, 1.2));
             
             createStar();
             createDust();
             loadPhotos();
 
-            window.addEventListener('mousedown', (e) => { isDragging = true; previousMouseX = e.clientX; handleSelect(e); });
-            window.addEventListener('mousemove', (e) => { if(isDragging) { targetRotationY += (e.clientX - previousMouseX) * 0.005; previousMouseX = e.clientX; } });
+            // Events
+            window.addEventListener('mousedown', onDown);
+            window.addEventListener('mousemove', onMove);
             window.addEventListener('mouseup', () => isDragging = false);
-            window.addEventListener('touchstart', (e) => { isDragging = true; previousMouseX = e.touches[0].clientX; handleSelect(e.touches[0]); });
-            window.addEventListener('touchmove', (e) => { if(isDragging) { targetRotationY += (e.touches[0].clientX - previousMouseX) * 0.005; previousMouseX = e.touches[0].clientX; } });
+            window.addEventListener('touchstart', (e) => onDown(e.touches[0]));
+            window.addEventListener('touchmove', (e) => onMove(e.touches[0]));
             window.addEventListener('touchend', () => isDragging = false);
-            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('resize', onResize);
 
             startIntro();
             animate();
@@ -76,16 +78,16 @@
             }
             const geo = new THREE.ExtrudeGeometry(shape, {depth: 4, bevelEnabled: true});
             star = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color: 0xFFD700, emissive: 0xFFD700, emissiveIntensity: 0.5}));
-            star.position.y = 110;
+            star.position.y = 115;
             scene.add(star);
         }
 
         function createDust() {
             const geo = new THREE.BufferGeometry();
             const pos = [];
-            for(let i=0; i<3000; i++) pos.push((Math.random()-0.5)*1000, (Math.random()-0.5)*1000, (Math.random()-0.5)*1000);
+            for(let i=0; i<3500; i++) pos.push((Math.random()-0.5)*1200, (Math.random()-0.5)*1200, (Math.random()-0.5)*1200);
             geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-            magicDust = new THREE.Points(geo, new THREE.PointsMaterial({color: 0xFFD700, size: 1, transparent: true, opacity: 0.5}));
+            magicDust = new THREE.Points(geo, new THREE.PointsMaterial({color: 0xFFD700, size: 1, transparent: true, opacity: 0.4}));
             scene.add(magicDust);
         }
 
@@ -93,17 +95,21 @@
             const loader = new THREE.TextureLoader();
             for (let i = 1; i <= totalPhotos; i++) {
                 const texture = loader.load(`public/photos/${i}.jpg`);
+                // Khởi tạo ảnh với độ mờ 0 để xuất hiện dần trong intro
                 const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0, side: THREE.DoubleSide });
-                const mesh = new THREE.Mesh(new THREE.PlaneGeometry(20, 26), mat);
+                const mesh = new THREE.Mesh(new THREE.PlaneGeometry(22, 28), mat);
                 
-                // Viền ảnh
-                const border = new THREE.Mesh(new THREE.PlaneGeometry(21.5, 27.5), new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0}));
-                border.position.z = -0.1;
+                // Viền trắng tinh tế
+                const border = new THREE.Mesh(new THREE.PlaneGeometry(23.5, 29.5), new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0}));
+                border.position.z = -0.05;
                 mesh.add(border);
 
-                const t = i/totalPhotos, a = i * 0.8, r = t * 90;
-                mesh.userData.treePos = new THREE.Vector3(Math.cos(a)*r, (1-t)*170 - 80, Math.sin(a)*r);
-                mesh.userData.explodePos = new THREE.Vector3((Math.random()-0.5)*500, (Math.random()-0.5)*500, (Math.random()-0.5)*500);
+                // Sắp xếp hình xoắn ốc cây thông
+                const t = i/totalPhotos;
+                const a = i * 0.85; 
+                const r = t * 95;
+                mesh.userData.treePos = new THREE.Vector3(Math.cos(a)*r, (1-t)*180 - 90, Math.sin(a)*r);
+                mesh.userData.explodePos = new THREE.Vector3((Math.random()-0.5)*600, (Math.random()-0.5)*600, (Math.random()-0.5)*600);
                 mesh.position.copy(mesh.userData.treePos);
                 
                 photoMeshes.push(mesh);
@@ -112,9 +118,10 @@
         }
 
         function startIntro() {
-            const timePerPhoto = introTotalTime / totalPhotos;
+            const timePerPhoto = introDuration / totalPhotos;
             let count = 0;
             const status = document.getElementById('status-tag');
+            
             const interval = setInterval(() => {
                 if(count >= totalPhotos) {
                     clearInterval(interval);
@@ -124,61 +131,84 @@
                     document.getElementById('ui-guide').style.display = 'block';
                     return;
                 }
-                status.innerText = `🎞️ ĐANG TRÌNH CHIẾU KỶ NIỆM (${count+1}/${totalPhotos})`;
-                introActiveIndex = count++;
+                introActiveIndex = count;
+                status.innerText = `🎞️ KỶ NIỆM THỨ ${count + 1} / ${totalPhotos}`;
+                count++;
             }, timePerPhoto);
         }
 
-        function handleSelect(e) {
+        let lastClick = 0;
+        function onDown(e) {
+            isDragging = true;
+            previousMouseX = e.clientX;
+            
             if(!isIntroFinished) return;
             const mouse = new THREE.Vector2((e.clientX/window.innerWidth)*2-1, -(e.clientY/window.innerHeight)*2+1);
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(mouse, camera);
+            
             const intersects = raycaster.intersectObjects(photoMeshes);
-            if(intersects.length > 0) focusedMesh = (focusedMesh === intersects[0].object) ? null : intersects[0].object;
-            else focusedMesh = null;
+            if(intersects.length > 0) {
+                focusedMesh = (focusedMesh === intersects[0].object) ? null : intersects[0].object;
+            } else {
+                focusedMesh = null;
+                // Kiểm tra click vào ngôi sao
+                const starHit = raycaster.intersectObject(star);
+                if(starHit.length > 0) {
+                    if(Date.now() - lastClick < 300) isExploded = !isExploded;
+                    lastClick = Date.now();
+                }
+            }
+        }
+
+        function onMove(e) {
+            if(isDragging) {
+                targetRotationY += (e.clientX - previousMouseX) * 0.007;
+                previousMouseX = e.clientX;
+            }
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            if(star) star.rotation.y += 0.01;
-            magicDust.rotation.y += 0.0005;
+            if(star) star.rotation.y += 0.015;
+            magicDust.rotation.y += 0.0003;
             scene.rotation.y += (targetRotationY - scene.rotation.y) * 0.1;
 
             photoMeshes.forEach((mesh, idx) => {
-                const isCurrent = (idx === introActiveIndex) || (mesh === focusedMesh);
+                const isSelected = (idx === introActiveIndex) || (mesh === focusedMesh);
                 
-                if(isCurrent) {
-                    // CĂN GIỮA & PHẲNG TUYỆT ĐỐI (STATIC VIEW)
-                    const dist = window.innerWidth < 600 ? 180 : 250; // Khoảng cách nhìn cho mobile/PC
-                    const centerVec = new THREE.Vector3(0, 0, dist).applyQuaternion(camera.quaternion);
-                    const targetPos = scene.worldToLocal(centerVec.add(camera.position));
+                if(isSelected) {
+                    // CĂN GIỮA & PHẲNG TUYỆT ĐỐI (GIỐNG VÍ DỤ ẢNH GỐC)
+                    const viewDist = window.innerWidth < 600 ? 160 : 230; 
+                    const centerPos = new THREE.Vector3(0, 5, viewDist).applyQuaternion(camera.quaternion);
+                    const localPos = scene.worldToLocal(centerPos.add(camera.position));
                     
-                    mesh.position.lerp(targetPos, 0.12);
-                    mesh.scale.lerp(new THREE.Vector3(5.5, 5.5, 1), 0.12); // Phóng to 5.5 lần
+                    mesh.position.lerp(localPos, 0.15);
+                    mesh.scale.lerp(new THREE.Vector3(6, 6, 1), 0.15); 
                     
-                    // LUÔN PHẲNG VỚI CAMERA (Ảnh tĩnh 2D)
+                    // Thuật toán Flatten: Ép ảnh phẳng vuông góc với hướng nhìn camera
                     mesh.quaternion.copy(camera.quaternion).premultiply(scene.quaternion.clone().invert());
                     
                     mesh.material.opacity = 1;
-                    mesh.children[0].material.opacity = 0.8; // Hiện viền
+                    mesh.children[0].material.opacity = 0.9; 
                 } else {
                     const target = (isIntroFinished && isExploded) ? mesh.userData.explodePos : mesh.userData.treePos;
                     mesh.position.lerp(target, 0.08);
                     mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
                     
-                    // Khi không được chọn, ảnh hướng tâm cây thông (Ảnh động xoay)
                     if(!isExploded) mesh.lookAt(0, mesh.position.y, 0);
                     
-                    mesh.material.opacity += ((isIntroFinished ? (isExploded?1:0.3) : 0.1) - mesh.material.opacity) * 0.1;
-                    mesh.children[0].material.opacity = 0; // Ẩn viền
+                    // Logic mờ dần cho ảnh không được chọn
+                    const baseOpacity = isIntroFinished ? (isExploded ? 1 : 0.3) : 0;
+                    mesh.material.opacity += (baseOpacity - mesh.material.opacity) * 0.1;
+                    mesh.children[0].material.opacity = 0;
                 }
             });
 
             renderer.render(scene, camera);
         }
 
-        function onWindowResize() {
+        function onResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
