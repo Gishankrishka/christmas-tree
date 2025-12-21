@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Christmas 2025 - Static Focus</title>
+    <title>Christmas 2025 - Center View</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: radial-gradient(circle, #1a1a1a, #000); font-family: sans-serif; touch-action: none; }
@@ -181,17 +181,21 @@
                 const isSelected = (!isIntroFinished && index === introActiveIndex) || (mesh === focusedMesh);
                 
                 if (isSelected) {
-                    // CĂN GIỮA - LUÔN PHẲNG (ẢNH TĨNH)
-                    const vector = new THREE.Vector3(0, 15, 200); 
+                    // ĐIỀU CHỈNH: Đẩy khoảng cách ra xa (300 thay vì 200) để ảnh căn giữa vừa mắt
+                    const viewDistance = 280; 
+                    const vector = new THREE.Vector3(0, 10, viewDistance); 
+                    
+                    // Tính toán hướng camera
                     vector.applyQuaternion(camera.quaternion); 
                     const localPos = scene.worldToLocal(vector.add(camera.position));
                     
-                    mesh.position.lerp(localPos, 0.15);
-                    mesh.scale.lerp(new THREE.Vector3(4.5, 4.5, 4.5), 0.15); 
+                    // Di chuyển mượt tới tâm màn hình
+                    mesh.position.lerp(localPos, 0.12);
                     
-                    // Khóa góc quay để ảnh luôn song song với camera (phẳng tuyệt đối)
-                    const targetQuaternion = camera.quaternion.clone();
-                    // Do cảnh (scene) xoay, ta cần bù trừ góc xoay của scene để ảnh đứng yên trước camera
+                    // Phóng to ảnh đủ để nhìn rõ nhưng không chiếm hết màn hình
+                    mesh.scale.lerp(new THREE.Vector3(5.5, 5.5, 5.5), 0.12); 
+                    
+                    // Khóa góc quay để ảnh luôn phẳng đối diện camera (Ảnh tĩnh)
                     mesh.quaternion.copy(camera.quaternion).premultiply(scene.quaternion.clone().invert());
                     
                     mesh.material.opacity = 1;
