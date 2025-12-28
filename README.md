@@ -1,72 +1,106 @@
 # 🎄 Grand Luxury Interactive 3D Christmas Tree
 
-> 一个基于 **React**, **Three.js (R3F)** 和 **AI 手势识别** 的高保真 3D 圣诞树 Web 应用。
+> A high-fidelity 3D Christmas tree web application based on **React**, **Three.js (R3F)**, and **AI gesture recognition**.
 
-这个项目不仅仅是一棵树，它是一个承载记忆的交互式画廊。成百上千个粒子、璀璨的彩灯和悬浮的拍立得照片共同组成了一棵奢华的圣诞树。用户可以通过手势控制树的形态（聚合/散开）和视角旋转，体验电影级的视觉盛宴。
+This project is more than just a tree; it's an interactive gallery that holds memories. Hundreds of particles, dazzling lights, and floating Polaroid photos combine to create a luxurious Christmas tree. Users can control the tree's shape (aggregate/spread) and viewpoint rotation with gestures, experiencing a cinematic visual feast.
 
 ![Project Preview](public/preview.png)
-*(注：建议在此处上传一张你的项目运行截图)*
 
-## ✨ 核心特性
+*(Note: It is recommended to upload a screenshot of your project running here)*
 
-* **极致视觉体验**：由 45,000+ 个发光粒子组成的树身，配合动态光晕 (Bloom) 和辉光效果，营造梦幻氛围。
-* **记忆画廊**：照片以“拍立得”风格悬浮在树上，每一张都是一个独立的发光体，支持双面渲染。
-* **AI 手势控制**：无需鼠标，通过摄像头捕捉手势即可控制树的形态（聚合/散开）和视角旋转。
-* **丰富细节**：包含动态闪烁的彩灯、飘落的金银雪花、以及随机分布的圣诞礼物和糖果装饰。
-* **高度可定制**：**支持用户轻松替换为自己的照片，并自由调整照片数量。**
+## ✨ Core Features
 
-## 🛠️ 技术栈
+* **Ultimate Visual Experience**: A tree body composed of 45,000+ glowing particles, combined with dynamic bloom and glow effects, creates a dreamlike atmosphere.
 
-* **框架**: React 18, Vite
-* **3D 引擎**: React Three Fiber (Three.js)
-* **工具库**: @react-three/drei, Maath
-* **后期处理**: @react-three/postprocessing
-* **AI 视觉**: MediaPipe Tasks Vision (Google)
+* **Memory Gallery:** Photos float above the tree in a Polaroid style, each a self-contained luminous object, supporting dual-sided rendering.
 
-## 🚀 快速开始
+* **AI Gesture Control:** No mouse required; control the tree's shape (aggregating/scattering) and view rotation via camera-captured gestures.
 
-### 1. 环境准备
-确保你的电脑已安装 [Node.js](https://nodejs.org/) (建议 v18 或更高版本)。
+* **Rich Details:** Includes dynamically flashing colored lights, falling gold and silver snowflakes, and randomly distributed Christmas gifts and candy decorations.
 
-### 2. 安装依赖
-在项目根目录下打开终端，运行：```bash npm install
-### 3. 启动项目
+* **Highly Customizable:** Users can easily replace photos with their own and freely adjust the number of photos. **
+
+## 🛠️ Technology Stack
+
+* **Framework**: React 18, Vite
+
+* **3D Engine**: React Three Fiber (Three.js)
+
+* **Library**: @react-three/drei, Maath
+
+* **Post-processing**: @react-three/postprocessing
+
+* **AI Vision**: MediaPipe Tasks Vision (Google)
+
+## 🚀 Quick Start
+
+### 1. Environment Preparation
+
+Ensure your computer has Node.js installed (https://nodejs.org/) (v18 or higher recommended).
+
+### 2. Install Dependencies
+
+Open a terminal in the project root directory and run: ```bash npm install
+
+### 3. Start the Project
+
 npm run dev
-### 🖼️ 自定义照片
-### 1. 准备照片
-找到项目目录下的 public/photos/ 文件夹。
 
-顶端大图/封面图：命名为 top.jpg（将显示在树顶的立体五角星上）。
+### 🖼️ Custom Photos
 
-树身照片：命名为 1.jpg, 2.jpg, 3.jpg ... 依次类推。
+### 1. Prepare Photos
 
-建议：使用正方形或 4:3 比例的图片，文件大小不宜过大（建议单张 500kb 以内以保证流畅度）
-### 2. 替换照片
-直接将你自己的照片复制到 public/photos/ 文件夹中，覆盖原有的图片即可。请保持文件名格式不变（1.jpg, 2.jpg 等）。
-### 3. 修改照片数量 (增加或减少)
-如果你放入了更多照片（例如从默认的 31 张增加到 100 张），需要修改代码以通知程序加载它们。
-打开文件：src/App.tsx
-找到大约 第 19 行 的代码：// --- 动态生成照片列表 (top.jpg + 1.jpg 到 31.jpg) ---
-const TOTAL_NUMBERED_PHOTOS = 31; // <--- 修改这个数字！
-### 🖐️ 手势控制说明
-* **本项目内置了 AI 手势识别系统，请站在摄像头前进行操作（屏幕右下角有 DEBUG 按钮可查看摄像头画面）**：
-🖐 张开手掌 (Open Palm)	Disperse (散开)	圣诞树炸裂成漫天飞舞的粒子和照片
-✊ 握紧拳头 (Closed Fist)	Assemble (聚合)	所有元素瞬间聚合成一棵完美的圣诞树
-👋 手掌左右移动	旋转视角	手向左移，树向左转；手向右移，树向右转
-👋 手掌上下移动	俯仰视角	手向上移，视角抬高；手向下移，视角降低
-### ⚙️ 进阶配置
-* **如果你熟悉代码，可以在 src/App.tsx 中的 CONFIG 对象里调整更多视觉参数**：
-  const CONFIG = {
-  colors: { ... }, // 修改树、灯光、边框的颜色
-  counts: {
-    foliage: 15000,   // 修改树叶粒子数量 (配置低可能会卡)
-    ornaments: 300,   // 修改悬挂的照片/拍立得数量
-    lights: 400       // 修改彩灯数量
-  },
-  tree: { height: 22, radius: 9 }, // 修改树的大小
-  // ...
+Locate the public/photos/ folder in the project directory.
+
+Top image/cover image: Name it top.jpg (it will appear on the 3D five-pointed star at the top of the tree).
+
+Tree trunk photos: Name them 1.jpg, 2.jpg, 3.jpg... and so on.
+
+Suggestion: Use square or 4:3 aspect ratio images, and keep file sizes small (ideally under 500kb per image for smooth performance).
+
+### 2. Replace Photos Simply copy your own photos to the public/photos/ folder, overwriting the existing images. Please keep the filename format unchanged (1.jpg, 2.jpg, etc.).
+
+### 3. Modify the Number of Photos (Increase or Decrease) If you add more photos (e.g., from the default 31 to 100), you need to modify the code to instruct the program to load them.
+
+Open the file: src/App.tsx
+Find the code around line 19: // --- Dynamically generate a list of photos (top.jpg + 1.jpg to 31.jpg) ---
+const TOTAL_NUMBERED_PHOTOS = 31; // <--- Modify this number!
+
+### 🖐️ Gesture Control Instructions
+
+* **This project has a built-in AI gesture recognition system. Please stand in front of the camera to operate (there is a DEBUG button in the lower right corner of the screen to view the camera feed)**:
+
+🖐 Open Palm: Disperse - The Christmas tree explodes into a shower of particles and photos.
+
+✊ Closed Fist: Assemble - All elements instantly assemble into a perfect Christmas tree.
+
+👋 Move Palm Left/Right: Rotate View - Move your hand left, the tree rotates left; move your hand right, the tree rotates right.
+
+👋 Move Palm Up/Down: Pitch View - Move your hand up, the view tilts; move your hand down, the view tilts.
+
+### ⚙️ Advanced Configuration
+
+* **If you are familiar with code, you can adjust more visual parameters in the CONFIG object in src/App.tsx**:
+
+const CONFIG = {
+colors: { ... }, // Modify the colors of the tree, lights, and borders
+counts: {
+
+foliage: 15000, // Modify the number of leaf particles (may lag on low-end systems)
+
+ornaments: 300, // Modify the number of hanging photos/Polaroids
+
+lights: 400 // Modify the number of fairy lights
+
+},
+
+tree: { height: 22, radius: 9 }, // Modify the size of the tree
+
+// ...
+
 };
+
 ### 📄 License
 MIT License. Feel free to use and modify for your own holiday celebrations!
-### Merry Christmas! 🎄✨
 
+### Merry Christmas! 🎄✨
